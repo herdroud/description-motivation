@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Descriptions TikTok</title>
+<style>
+  :root {
+    --bg: #0b0b0d;
+    --card: #141418;
+    --card-done: #101013;
+    --line: #26262d;
+    --text: #ececf0;
+    --muted: #8d8d96;
+    --accent: #ff2a2a;
+    --ok: #6fd08c;
+    --yellow: #e8ff3a;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 28px 16px 80px; }
+  header h1 { font-size: 26px; margin: 0 0 6px; letter-spacing: 0.2px; }
+  header p { margin: 0; color: var(--muted); font-size: 14px; }
+  .bar {
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(11,11,13,0.92);
+    backdrop-filter: blur(8px);
+    padding: 14px 0 12px;
+    margin: 18px 0 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .bar-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  .count { font-weight: 700; font-size: 15px; }
+  .progress { flex: 1; min-width: 120px; height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .progress > i { display: block; height: 100%; width: 0; background: var(--ok); transition: width .25s ease; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
+  .group-title { margin: 30px 0 10px; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; color: var(--muted); }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+    margin-bottom: 16px;
+  }
+  .card.done { background: var(--card-done); border-color: #1c2a20; }
+  .card.done .text { opacity: .55; }
+  .card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .num { color: var(--accent); font-weight: 700; margin-right: 8px; }
+  .title { font-size: 18px; font-weight: 700; margin: 0; }
+  .meta { margin: 4px 0 0; font-size: 13px; color: var(--muted); }
+  .meta code { background: #1d1d23; padding: 1px 6px; border-radius: 5px; color: var(--text); font-size: 12px; }
+  .check {
+    display: flex; align-items: center; gap: 9px;
+    padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px;
+    cursor: pointer; user-select: none; font-size: 14px; font-weight: 600;
+    background: #0f0f12;
+  }
+  .check input { width: 20px; height: 20px; accent-color: var(--ok); cursor: pointer; margin: 0; }
+  .card.done .check { border-color: #2c4a35; color: var(--ok); }
+  .date { font-size: 12px; color: var(--muted); font-weight: 400; }
+  .text {
+    margin: 14px 0 12px;
+    padding: 14px 16px;
+    background: #0d0d10;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    white-space: pre-wrap;
+    font-size: 15px;
+    line-height: 1.55;
+  }
+  .actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  button.copy {
+    background: var(--text); color: #0b0b0d; border: 0; border-radius: 10px;
+    padding: 10px 18px; font-size: 15px; font-weight: 700; cursor: pointer;
+  }
+  button.copy:hover { background: #fff; }
+  button.copy.ok { background: var(--ok); }
+  .music { font-size: 13px; color: var(--muted); }
+  .music b { color: var(--text); font-weight: 600; }
+  .hidden { display: none !important; }
+  .note { margin-top: 36px; font-size: 13px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 16px; }
+  @media (max-width: 520px) { header h1 { font-size: 22px; } .card { padding: 14px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Descriptions TikTok</h1>
+    <p>Clique sur « Copier » puis colle dans TikTok. Coche la case quand la vidéo est en ligne.</p>
+  </header>
+
+  <div class="bar">
+    <div class="bar-row">
+      <span class="count" id="count">0 / 0 en ligne</span>
+      <div class="progress"><i id="progress"></i></div>
+      <label class="toggle"><input type="checkbox" id="hideDone"> Masquer les vidéos en ligne</label>
+    </div>
+  </div>
+
+  <main id="list"></main>
+
+  <p class="note">
+    Les cases cochées sont mémorisées dans ce navigateur (Safari). Si tu vides les données du site ou que tu ouvres le fichier dans un autre navigateur, elles repartent à zéro.
+    Pour ajouter une vidéo, demande-le moi : je rajoute une entrée dans la liste.
+  </p>
+</div>
+
+<script>
+/*
+  AJOUTER UNE VIDEO : copier un bloc dans DESCRIPTIONS, changer id (unique, ne jamais le modifier ensuite),
+  sujet, file, title, music et text. Le texte est copié tel quel (sauts de ligne compris).
+*/
+const DESCRIPTIONS = [
+  {
+    id: 'perf-mur', sujet: 'Perfectionnisme', file: 'PerfMur.mp4', title: 'Le mur de briques',
+    music: 'tendue puis qui s’éclaircit, piano lent',
+    text: `Une phrase t'empêche de réussir. Tu la dis tous les jours.
+Tu ne l'as jamais remarquée.
+
+Elle ne ressemble pas à une excuse.
+Elle ressemble même à de la sagesse.
+
+Tu la dis quand tu veux lancer quelque chose.
+Tu la dis quand on te demande où tu en es.
+
+La voici : « Ce n'est pas encore prêt. »
+
+Elle te protège.
+Tant que ce n'est pas prêt, personne ne peut te juger.
+Tant que tu ne montres rien, tu ne peux pas échouer.
+
+Pendant ce temps, quelqu'un d'autre sort un projet moche.
+Il se plante. Il corrige. Il recommence.
+Un an plus tard, son projet moche est devenu un vrai truc.
+
+Un projet fini bat toujours un rêve parfait.
+
+C'est quoi, ce que tu n'oses pas encore montrer ?
+
+#perfectionnisme #discipline #mindset`
+  },
+  {
+    id: 'perf-essais', sujet: 'Perfectionnisme', file: 'PerfEssais.mp4', title: 'Les feuilles : poubelle ou tableau',
+    music: 'sobre, battement régulier, sombre',
+    text: `Tu fais ça dix fois par jour sans t'en rendre compte.
+Et ça détruit tout ce que tu construis.
+
+Ce n'est pas de la paresse.
+Ce n'est pas un manque de talent.
+C'est plus discret que ça.
+
+Voilà ce que tu fais :
+tu vois un petit défaut. Et tu effaces tout.
+Tu recommences à zéro.
+
+Le piège, c'est que zéro ne rapporte rien.
+Dix essais jetés, c'est dix fois rien.
+
+Celui qui accepte le défaut garde chaque essai.
+À la fin, il a un mur plein de preuves.
+
+Le talent donne un meilleur départ.
+Les essais gardés gagnent la course.
+
+Dis-moi : qu'est-ce que tu as jeté alors que ça valait le coup ?
+
+#perfectionnisme #procrastination #mindset`
+  },
+  {
+    id: 'perf-feu-vert', sujet: 'Perfectionnisme', file: 'PerfFeuVert.mp4', title: 'Les voyants jamais tous verts',
+    music: 'suspense qui monte, puis libération',
+    text: `Ceux qui réussissent ont un point commun.
+Il ne va pas te plaire.
+
+Ce n'est pas le talent. Ce n'est pas l'argent.
+Ce n'est même pas le courage.
+
+Toi, tu attends d'avoir du temps, de l'argent et de la confiance.
+Tu attends que les trois arrivent en même temps.
+Ça n'arrive jamais.
+
+Voici leur point commun :
+ils partent avant d'être prêts.
+
+Un seul voyant vert leur suffit.
+Ils ont peur aussi. Ils partent quand même.
+Un jour, tu les revois à l'arrivée.
+
+Quel voyant tu attends : le temps, l'argent ou la confiance ?
+
+#perfectionnisme #passeralaction #mindset`
+  },
+  {
+    id: 'motiv-salle', sujet: 'Motivation contre discipline', file: 'MotivSalle.mp4', title: 'La salle : jour 1 contre jour 365',
+    music: 'sombre et mélancolique, sans voix',
+    text: `Au jour 365, il n'en reste qu'un.
+Il n'est pas plus fort. Il sait un truc que tu ignores.
+
+Au jour 1, tout le monde est prêt à changer de vie.
+Au jour 30, la salle commence à se vider.
+Pourtant, personne n'a manqué de volonté.
+
+Alors qu'est-ce qui a changé ?
+Quelque chose de très simple.
+On ne te l'a jamais dit.
+
+Ce qu'il sait : la motivation, c'est une émotion.
+Une émotion ne dure jamais.
+
+Le motivé attend d'avoir envie.
+Le discipliné y va même quand il n'a pas envie.
+
+Les seuls jours qui comptent sont les jours sans envie.
+
+Dis-moi : à quel jour tu abandonnes d'habitude ?
+
+#discipline #constance #mindset`
+  },
+  {
+    id: 'motiv-feu', sujet: 'Motivation contre discipline', file: 'MotivFeu.mp4', title: 'Le grand feu contre la braise',
+    music: 'calme, nocturne, un peu froide',
+    text: `Toutes tes bonnes résolutions meurent de la même façon.
+Tu vas reconnaître la scène.
+
+Le premier soir, tout va bien.
+Un feu immense. De grandes promesses. Les bras en l'air.
+
+Puis la nuit tombe.
+Et personne n'a pensé à ramener du bois.
+
+Voilà la cause. Toujours la même.
+Pas le manque d'envie. Pas la flemme.
+Le manque de bois.
+
+Pendant ce temps, quelqu'un entretient une toute petite flamme.
+Une bûche par jour. Jamais plus.
+Ça ne fait pas rêver. Mais en plein hiver, c'est la seule qui chauffe.
+
+Un feu ne s'éteint pas parce qu'il est petit.
+Il s'éteint parce qu'on l'oublie.
+
+Toi, tu fais un feu de joie ou tu nourris une braise ?
+
+#discipline #constance #mindset`
+  },
+  {
+    id: 'motiv-velo', sujet: 'Motivation contre discipline', file: 'MotivVelo.mp4', title: 'Le vélo et la lampe (la moins soignée, à poster en dernier)',
+    music: 'rythme régulier qui accélère à peine',
+    text: `Tu abandonnes toujours au même moment.
+Je sais pourquoi.
+
+Ce n'est ni la flemme, ni le manque de volonté.
+C'est plus bête que ça.
+
+Tu te donnes à fond pendant sept jours.
+Tu te sens invincible. Tu te dis : cette fois, c'est la bonne.
+Puis la fatigue arrive. Tu t'arrêtes.
+Et tout s'éteint en quelques jours.
+
+Voilà l'erreur : tu fais un sprint pour un marathon.
+
+La lumière ne dépend pas de ta force. Elle dépend de ton rythme.
+Celui qui avance doucement, tous les jours, garde la pièce éclairée.
+
+Tu veux briller une semaine ou éclairer toute l'année ?
+
+#discipline #constance #mindset`
+  }
+];
+
+/* ---------- état « en ligne » mémorisé dans le navigateur (sans planter si le stockage est bloqué) ---------- */
+const KEY = 'descriptions-tiktok-v1';
+let state = {};
+try { state = JSON.parse(localStorage.getItem(KEY) || '{}') || {}; } catch (e) { state = {}; }
+const save = () => { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} };
+
+const $ = (s) => document.querySelector(s);
+const list = $('#list');
+const hideDone = $('#hideDone');
+
+try { hideDone.checked = localStorage.getItem(KEY + '-hide') === '1'; } catch (e) {}
+
+function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    return navigator.clipboard.writeText(text);
+  }
+  return new Promise((resolve, reject) => {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy') ? resolve() : reject(); } catch (e) { reject(e); } finally { document.body.removeChild(ta); }
+  });
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return isNaN(d) ? '' : d.toLocaleDateString('fr-FR', {day: '2-digit', month: '2-digit'}) + ' à ' + d.toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'});
+}
+
+function render() {
+  list.innerHTML = '';
+  let lastSujet = null;
+  DESCRIPTIONS.forEach((d, i) => {
+    if (d.sujet !== lastSujet) {
+      const h = document.createElement('div');
+      h.className = 'group-title';
+      h.textContent = d.sujet;
+      h.dataset.group = d.sujet;
+      list.appendChild(h);
+      lastSujet = d.sujet;
+    }
+    const done = !!state[d.id];
+    const card = document.createElement('article');
+    card.className = 'card' + (done ? ' done' : '');
+    card.dataset.id = d.id;
+    card.dataset.sujet = d.sujet;
+    card.innerHTML = `
+      <div class="card-head">
+        <div>
+          <h2 class="title"><span class="num">${i + 1}</span></h2>
+          <p class="meta">Fichier : <code></code></p>
+        </div>
+        <label class="check">
+          <input type="checkbox" ${done ? 'checked' : ''}>
+          <span>${done ? 'En ligne' : 'Pas encore en ligne'}</span>
+          <span class="date">${done ? fmtDate(state[d.id]) : ''}</span>
+        </label>
+      </div>
+      <div class="text"></div>
+      <div class="actions">
+        <button class="copy" type="button">Copier la description</button>
+        <span class="music">Musique : <b></b></span>
+      </div>`;
+    card.querySelector('.title').append(document.createTextNode(d.title));
+    card.querySelector('code').textContent = d.file;
+    card.querySelector('.text').textContent = d.text;
+    card.querySelector('.music b').textContent = d.music;
+
+    card.querySelector('input').addEventListener('change', (e) => {
+      if (e.target.checked) state[d.id] = new Date().toISOString(); else delete state[d.id];
+      save();
+      render();
+    });
+    const btn = card.querySelector('button.copy');
+    btn.addEventListener('click', () => {
+      copyText(d.text).then(() => {
+        btn.textContent = 'Copié ✓';
+        btn.classList.add('ok');
+        setTimeout(() => { btn.textContent = 'Copier la description'; btn.classList.remove('ok'); }, 1600);
+      }).catch(() => {
+        btn.textContent = 'Sélectionne le texte et fais Cmd+C';
+        setTimeout(() => { btn.textContent = 'Copier la description'; }, 2600);
+      });
+    });
+    list.appendChild(card);
+  });
+  update();
+}
+
+function update() {
+  const total = DESCRIPTIONS.length;
+  const n = DESCRIPTIONS.filter((d) => state[d.id]).length;
+  $('#count').textContent = n + ' / ' + total + ' en ligne';
+  $('#progress').style.width = (total ? (n / total) * 100 : 0) + '%';
+  const hide = hideDone.checked;
+  list.querySelectorAll('.card').forEach((c) => c.classList.toggle('hidden', hide && !!state[c.dataset.id]));
+  list.querySelectorAll('.group-title').forEach((g) => {
+    const visible = [...list.querySelectorAll('.card')].some((c) => c.dataset.sujet === g.dataset.group && !c.classList.contains('hidden'));
+    g.classList.toggle('hidden', !visible);
+  });
+}
+
+hideDone.addEventListener('change', () => {
+  try { localStorage.setItem(KEY + '-hide', hideDone.checked ? '1' : '0'); } catch (e) {}
+  update();
+});
+
+render();
+</script>
+</body>
+</html>
